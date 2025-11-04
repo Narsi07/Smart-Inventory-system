@@ -1,0 +1,57 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isUserAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    }
+
+    function isUserStaff() {
+        return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Staff';
+    }
+
+    match /products/{productId} {
+      allow read: if isSignedIn();
+      allow write: if isUserAdmin() || isUserStaff();
+      // Admins should be able to delete products. Staff should not.
+      allow delete: if isUserAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isUserAdmin();
+      // Allow admins to list all users. Allow staff and signed-in users to list users with the 'Supplier' role.
+      allow list: if isUserAdmin() || ((isUserStaff() || isSignedIn()) && request.query.where.role == 'Supplier');
+      allow create: if true;
+      allow update: if isOwner(userId) || isUserAdmin();
+    }
+
+    match /suppliers/{supplierId} {
+        allow read: if isSignedIn();
+        allow write: if isUserAdmin() || isUserStaff();
+    }
+
+    match /purchaseOrders/{purchaseOrderId} {
+        allow read: if isUserAdmin() || isUserStaff();
+        allow create: if isUserAdmin() || isUserStaff();
+        allow update: if isUserAdmin() || isUserStaff();
+        allow delete: if isUserAdmin();
+    }
+    
+    match /sales/{saleId} {
+      allow read, create: if isUserAdmin() || isUserStaff();
+      // Admins need to be able to delete sales records when deleting a product.
+      allow delete: if isUserAdmin();
+    }
+  }
+}
+
+    

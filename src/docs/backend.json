@@ -1,0 +1,141 @@
+
+{
+  "entities": {
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product in the inventory.",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the product." },
+        "category": { "type": "string", "description": "Category of the product." },
+        "description": { "type": "string", "description": "Detailed description." },
+        "stock": { "type": "number", "description": "Current quantity in stock." },
+        "unitOfMeasure": { "type": "string", "description": "The unit of measurement for the stock, e.g., 'kg', 'item', 'liters'." },
+        "reorderPoint": { "type": "number", "description": "Stock level that triggers a reorder." },
+        "reorderQuantity": { "type": "number", "description": "Standard quantity to reorder." },
+        "location": { "type": "string", "description": "Storage location." },
+        "supplierId": { "type": "string", "description": "Reference to the Supplier." },
+        "expirationDate": { "type": "string", "format": "date-time" },
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "costPrice": { "type": "number", "description": "Cost of purchasing one unit." },
+        "sellingPrice": { "type": "number", "description": "Price at which one unit is sold." },
+        "owner": { "type": "string", "description": "The UID of the user who owns this product." },
+        "lifecycle": { "type": "string", "enum": ["New", "Mature", "Declining"], "description": "The product's current lifecycle stage." },
+        "storageCapacity": { "type": "number", "description": "Maximum number of units that can be stored." },
+        "promotion": {
+            "type": "object",
+            "description": "Details of any active or upcoming promotion.",
+            "properties": {
+                "type": { "type": "string", "description": "e.g., 'Discount', 'BOGO'" },
+                "startDate": { "type": "string", "format": "date-time" },
+                "endDate": { "type": "string", "format": "date-time" }
+            }
+        }
+      },
+      "required": ["name", "category", "stock", "unitOfMeasure", "reorderPoint", "location", "supplierId", "costPrice", "sellingPrice", "owner"]
+    },
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User Profile",
+      "type": "object",
+      "description": "Represents a user's profile information.",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["Admin", "Staff", "Supplier"], "description": "The role of the user." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "supplierId": { "type": "string", "description": "If the user is a supplier, this links to their supplier entry."}
+      },
+      "required": ["email", "displayName", "role", "createdAt"]
+    },
+    "Supplier": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Supplier",
+        "type": "object",
+        "description": "Represents a product supplier.",
+        "properties": {
+          "name": { "type": "string", "description": "Name of the supplier." },
+          "contactEmail": { "type": "string", "format": "email" },
+          "phone": { "type": "string", "description": "Contact phone number for the supplier." },
+          "address": { "type": "string", "description": "Physical address of the supplier." },
+          "owner": { "type": "string", "description": "The UID of the user who created this entry." },
+          "userId": { "type": "string", "description": "The UID of the user account associated with this supplier for portal access." },
+          "reliabilityScore": { "type": "number", "description": "A score from 0 (very unreliable) to 1 (very reliable) for on-time delivery." }
+        },
+        "required": ["name", "owner"]
+    },
+    "PurchaseOrder": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Purchase Order",
+        "type": "object",
+        "description": "Represents a purchase order for products from a supplier.",
+        "properties": {
+            "poNumber": { "type": "string", "description": "Unique purchase order number." },
+            "supplierId": { "type": "string", "description": "Reference to the Supplier." },
+            "status": { "type": "string", "enum": ["Pending", "Acknowledged", "Shipped", "Completed"], "description": "Current status of the PO." },
+            "items": { 
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "productId": { "type": "string" },
+                        "name": { "type": "string" },
+                        "quantity": { "type": "number" },
+                        "costPrice": { "type": "number" }
+                    },
+                    "required": ["productId", "name", "quantity", "costPrice"]
+                }
+            },
+            "totalCost": { "type": "number" },
+            "orderDate": { "type": "string", "format": "date-time" },
+            "expectedDeliveryDate": { "type": "string", "format": "date-time" },
+            "owner": { "type": "string", "description": "The UID of the user who created this entry." },
+            "acknowledgedAt": { "type": "string", "format": "date-time" },
+            "shippedAt": { "type": "string", "format": "date-time" },
+            "shippingCarrier": { "type": "string" },
+            "trackingNumber": { "type": "string" }
+        },
+        "required": ["poNumber", "supplierId", "status", "items", "totalCost", "orderDate", "owner"]
+    },
+    "Sale": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Sale",
+        "type": "object",
+        "description": "Represents a sale of a product.",
+        "properties": {
+            "productId": { "type": "string", "description": "Reference to the Product." },
+            "quantity": { "type": "number", "description": "Number of units sold." },
+            "totalPrice": { "type": "number", "description": "Total price of the sale." },
+            "saleDate": { "type": "string", "format": "date-time" },
+            "owner": { "type": "string", "description": "The UID of the user who recorded the sale." }
+        },
+        "required": ["productId", "quantity", "totalPrice", "saleDate", "owner"]
+    }
+  },
+  "auth": { "providers": ["password", "anonymous"] },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/products/{productId}",
+        "definition": { "entityName": "Product", "schema": { "$ref": "#/entities/Product" }, "description": "Stores product information." }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": { "entityName": "UserProfile", "schema": { "$ref": "#/entities/UserProfile" }, "description": "Stores user profile data." }
+      },
+      {
+          "path": "/suppliers/{supplierId}",
+          "definition": { "entityName": "Supplier", "schema": { "$ref": "#/entities/Supplier" }, "description": "Stores supplier information." }
+      },
+      {
+          "path": "/purchaseOrders/{purchaseOrderId}",
+          "definition": { "entityName": "PurchaseOrder", "schema": { "$ref": "#/entities/PurchaseOrder" }, "description": "Stores purchase order information." }
+      },
+      {
+          "path": "/sales/{saleId}",
+          "definition": { "entityName": "Sale", "schema": { "$ref": "#/entities/Sale" }, "description": "Stores sale information." }
+      }
+    ]
+  }
+}
