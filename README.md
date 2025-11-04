@@ -1,76 +1,65 @@
-# Firebase Studio
+# SMART_INVENTORY
 
-This is a NextJS starter in Firebase Studio.
+A Next.js-based Smart Inventory Management System with AI-powered forecasting and analytics, built with Firebase and Gemini AI.
 
-To get started, take a look at src/app/page.tsx.
+## Features
 
-## Running Locally
+- AI-powered demand forecasting
+- Inventory management and tracking
+- Supplier management
+- Purchase order automation
+- Financial analytics
+- Sales reporting
+- Real-time inventory chatbot
+- User and role management
 
-You can download this project and run it on your local machine.
+## Tech Stack
+
+- Next.js 14 with App Router
+- Firebase (Authentication, Firestore)
+- Gemini AI for intelligent features
+- Tailwind CSS with Shadcn/UI
+- TypeScript
+
+## Setup and Installation
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (version 20 or later recommended)
-- [npm](https://www.npmjs.com/) (or another package manager like yarn or pnpm)
-- A Firebase project. If you don't have one, create one at [firebase.google.com](https://firebase.google.com/).
+- Node.js (v20 or later)
+- npm/yarn/pnpm
+- Firebase project
+- Gemini API key
 
-### 1. Install Dependencies
+### Local Development
 
-Once you have downloaded the code, navigate to the project directory in your terminal and install the required packages:
+1. Clone the repository:
+```bash
+git clone https://github.com/Narsi07/SMART_INVENTORY.git
+cd SMART_INVENTORY
+```
 
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-### 2. Set Up Environment Variables
-
-This project uses both Genkit (for AI) and Firebase (for authentication and database).
-
-1.  Create a new file named `.env.local` in the root of your project.
-2.  Add your API keys and Firebase configuration to this file.
-
-#### Gemini API Key
-You can get a Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-#### Firebase Configuration
-You can find your Firebase project's configuration in the Firebase console:
-Go to Project settings > General > Your apps > Web app > SDK setup and configuration. Select "Config".
-
-Your `.env.local` file should look like this:
-
+3. Create `.env.local` with required keys:
 ```
-# Genkit/Gemini
-GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
+# Gemini AI
+GEMINI_API_KEY=your_key_here
 
 # Firebase
-NEXT_PUBLIC_FIREBASE_API_KEY="YOUR_FIREBASE_API_KEY"
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="YOUR_FIREBASE_AUTH_DOMAIN"
-NEXT_PUBLIC_FIREBASE_PROJECT_ID="YOUR_FIREBASE_PROJECT_ID"
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="YOUR_FIREBASE_STORAGE_BUCKET"
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="YOUR_FIREBASE_MESSAGING_SENDER_ID"
-NEXT_PUBLIC_FIREBASE_APP_ID="YOUR_FIREBASE_APP_ID"
+NEXT_PUBLIC_FIREBASE_API_KEY=your_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_domain
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_bucket
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
-### 3. Configure Firebase Authentication
-
-In the Firebase console, go to the "Authentication" section and enable the "Email/Password" sign-in provider.
-
-### 4. Run the Development Server
-
-Now you can start the Next.js development server:
-
+4. Start the development server:
 ```bash
 npm run dev
 ```
 
-The application will be available at [http://localhost:9002](http://localhost:9002).
-
-### 5. Run the Genkit Inspector (Optional)
-
-To inspect and test your AI flows, you can run the Genkit inspector in a separate terminal:
-
-```bash
-npm run genkit:watch
-```
-
-This will start the inspector, which is typically available at [http://localhost:4000](http://localhost:4000).
+Visit http://localhost:9002 to see the application.
