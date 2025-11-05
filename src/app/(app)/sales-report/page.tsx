@@ -159,7 +159,7 @@ export default function SalesReportPage() {
                 <XAxis type="number" />
                 <YAxis type="category" dataKey="name" width={80} />
                 <Tooltip />
-                <Bar dataKey="units" fill="hsl(var(--secondary))" />
+                <Bar dataKey="units" fill="#8884d8" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

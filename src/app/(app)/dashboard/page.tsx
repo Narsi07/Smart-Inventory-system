@@ -290,7 +290,7 @@ export default function DashboardPage() {
             <CardHeader>
                 <CardTitle className="flex items-center">
                     <BrainCircuit className="mr-2" />
-                    AI-Powered Summary
+                    Summary about Inventory
                 </CardTitle>
                 <CardDescription>An intelligent overview of your inventory.</CardDescription>
             </CardHeader>

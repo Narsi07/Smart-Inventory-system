@@ -261,6 +261,8 @@ export default function InventoryPage() {
         const aVal = a[sortConfig.key];
         const bVal = b[sortConfig.key];
 
+        if (aVal === undefined || bVal === undefined) return 0;
+
         if (aVal < bVal) {
           return sortConfig.direction === "ascending" ? -1 : 1;
         }

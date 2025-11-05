@@ -21,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/page-header";
 import { productDemandForecast, type ProductDemandForecastOutput } from "@/ai/flows/product-demand-forecast";
@@ -43,6 +44,7 @@ const formSchema = z.object({
 export default function DemandForecastingPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [result, setResult] = React.useState<ProductDemandForecastOutput | null>(null);
+  const [forecastingMode, setForecastingMode] = React.useState<"ai" | "ml">("ai");
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useUser();
@@ -167,137 +169,148 @@ export default function DemandForecastingPage() {
         title="Demand Forecasting"
         description="Predict future product demand based on various factors."
       />
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Forecasting Inputs</CardTitle>
-            <CardDescription>
-              Provide the necessary data  to generate a forecast.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="productId">Product</Label>
-                <Controller
-                  control={form.control}
-                  name="productId"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} defaultValue={field.value} disabled={productsLoading}>
-                      <SelectTrigger>
-                        <SelectValue placeholder={productsLoading ? "Loading products..." : "Select a product..."} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products?.map((product: Product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {form.formState.errors.productId && (
-                  <p className="text-sm text-destructive">
-                    {form.formState.errors.productId.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="seasonalityEvents">External Events & Seasonality (Optional)</Label>
-                <Textarea
-                  id="seasonalityEvents"
-                  placeholder="e.g., Upcoming holidays, local festivals, marketing campaigns..."
-                  {...form.register("seasonalityEvents")}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="externalFactors">Other Market Factors (Optional)</Label>
-                <Textarea
-                  id="externalFactors"
-                  placeholder="e.g., Competitor actions, economic trends..."
-                  {...form.register("externalFactors")}
-                />
-              </div>
-
-              <Button type="submit" disabled={isLoading || pageIsLoading} className="w-full">
-                {isLoading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Wand2 className="mr-2 h-4 w-4" />
-                )}
-                Generate Forecast
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-        
-        <div className="space-y-4 lg:col-span-3">
-          <Card className="flex-grow">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <BrainCircuit className="mr-2" /> Forecast Result
-              </CardTitle>
-              <CardDescription>
-                The generated demand forecast will appear here.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading && (
-                <div className="flex flex-col items-center justify-center space-y-4 py-16">
-                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                  <p className="text-muted-foreground">
-                    Analyzing data and generating forecast...
-                  </p>
-                </div>
-              )}
-              {result && !isLoading && (
-                <div className="space-y-6">
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-center">
-                        <div className="p-4 bg-muted rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground">Forecasted Units</h4>
-                            <p className="text-2xl font-bold flex items-center justify-center gap-2"><Package className="h-6 w-6"/> {result.totalForecastedUnits}</p>
-                        </div>
-                         <div className="p-4 bg-muted rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground">Forecasted Revenue</h4>
-                            <p className="text-2xl font-bold flex items-center justify-center gap-2"><DollarSign className="h-6 w-6"/>${result.forecastedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
-                        </div>
-                        <div className="p-4 bg-muted rounded-lg col-span-2 lg:col-span-1">
-                            <h4 className="text-sm font-medium text-muted-foreground">Expected Growth</h4>
-                            <p className="text-2xl font-bold flex items-center justify-center gap-2"><TrendingUp className="h-6 w-6"/> {result.expectedGrowth}</p>
-                        </div>
-                    </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold">Top Factor</h3>
-                    <p className="text-sm text-muted-foreground font-medium p-2 bg-muted rounded-md inline-block">{result.topFactor}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold">Analysis</h3>
-                    <div className="text-sm text-muted-foreground whitespace-pre-wrap prose prose-sm">
-                      {result.analysis}
-                    </div>
-                  </div>
-                </div>
-              )}
-              {!result && !isLoading && (
-                <div className="flex flex-col items-center justify-center space-y-4 text-center py-16">
-                  <div className="p-4 bg-muted rounded-full">
-                    <BrainCircuit className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground max-w-xs mx-auto">
-                    Select a product and click "Generate Forecast" to see the prediction.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex items-center space-x-2">
+        <Label htmlFor="forecasting-mode">AI-Powered</Label>
+        <Switch
+          id="forecasting-mode"
+          checked={forecastingMode === "ml"}
+          onCheckedChange={(checked) => setForecastingMode(checked ? "ml" : "ai")}
+        />
+        <Label htmlFor="forecasting-mode">ML Model</Label>
       </div>
-      
-      <div className="grid gap-8 mt-8">
+
+      {forecastingMode === "ai" ? (
+        <>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Forecasting Inputs</CardTitle>
+                <CardDescription>
+                  Provide the necessary data  to generate a forecast.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="productId">Product</Label>
+                    <Controller
+                      control={form.control}
+                      name="productId"
+                      render={({ field }) => (
+                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={productsLoading}>
+                          <SelectTrigger>
+                            <SelectValue placeholder={productsLoading ? "Loading products..." : "Select a product..."} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products?.map((product: Product) => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                    {form.formState.errors.productId && (
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.productId.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="seasonalityEvents">External Events & Seasonality (Optional)</Label>
+                    <Textarea
+                      id="seasonalityEvents"
+                      placeholder="e.g., Upcoming holidays, local festivals, marketing campaigns..."
+                      {...form.register("seasonalityEvents")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="externalFactors">Other Market Factors (Optional)</Label>
+                    <Textarea
+                      id="externalFactors"
+                      placeholder="e.g., Competitor actions, economic trends..."
+                      {...form.register("externalFactors")}
+                    />
+                  </div>
+
+                  <Button type="submit" disabled={isLoading || pageIsLoading} className="w-full">
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    Generate Forecast
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+            
+            <div className="space-y-4 lg:col-span-3">
+              <Card className="flex-grow">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BrainCircuit className="mr-2" /> Forecast Result
+                  </CardTitle>
+                  <CardDescription>
+                    The generated demand forecast will appear here.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {isLoading && (
+                    <div className="flex flex-col items-center justify-center space-y-4 py-16">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                      <p className="text-muted-foreground">
+                        Analyzing data and generating forecast...
+                      </p>
+                    </div>
+                  )}
+                  {result && !isLoading && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 text-center">
+                            <div className="p-4 bg-muted rounded-lg">
+                                <h4 className="text-sm font-medium text-muted-foreground">Forecasted Units</h4>
+                                <p className="text-2xl font-bold flex items-center justify-center gap-2"><Package className="h-6 w-6"/> {result.totalForecastedUnits}</p>
+                            </div>
+                             <div className="p-4 bg-muted rounded-lg">
+                                <h4 className="text-sm font-medium text-muted-foreground">Forecasted Revenue</h4>
+                                <p className="text-2xl font-bold flex items-center justify-center gap-2"><DollarSign className="h-6 w-6"/>${result.forecastedRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                            </div>
+                            <div className="p-4 bg-muted rounded-lg col-span-2 lg:col-span-1">
+                                <h4 className="text-sm font-medium text-muted-foreground">Expected Growth</h4>
+                                <p className="text-2xl font-bold flex items-center justify-center gap-2"><TrendingUp className="h-6 w-6"/> {result.expectedGrowth}</p>
+                            </div>
+                        </div>
+
+                      <div>
+                        <h3 className="text-lg font-semibold">Top Factor</h3>
+                        <p className="text-sm text-muted-foreground font-medium p-2 bg-muted rounded-md inline-block">{result.topFactor}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold">Analysis</h3>
+                        <div className="text-sm text-muted-foreground whitespace-pre-wrap prose prose-sm">
+                          {result.analysis}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {!result && !isLoading && (
+                    <div className="flex flex-col items-center justify-center space-y-4 text-center py-16">
+                      <div className="p-4 bg-muted rounded-full">
+                        <BrainCircuit className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                      <p className="text-muted-foreground max-w-xs mx-auto">
+                        Select a product and click "Generate Forecast" to see the prediction.
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+          <div className="grid gap-8 mt-8">
             <Card>
                 <CardHeader>
                     <CardTitle>Sales Forecasting</CardTitle>
@@ -323,7 +336,18 @@ export default function DemandForecastingPage() {
                 </CardContent>
             </Card>
       </div>
-
+    </>
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <iframe
+                src="http://localhost:8501"
+                className="w-full h-[calc(100vh-200px)] border-0"
+                title="ML Demand Forecasting"
+              />
+            </CardContent>
+          </Card>
+        )}
     </div>
   );
 }

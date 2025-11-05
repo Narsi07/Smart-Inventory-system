@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/page-header";
 import { useCollection, useFirestore, useMemoFirebase, useDoc, useUser } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import type { Product, UserProfile, Sale } from "@/types";
-import { DollarSign, Archive, ShoppingCart, BrainCircuit, Loader2, PackageX, TrendingUp } from "lucide-react";
+import { DollarSign, Archive, ShoppingCart, BrainCircuit, Loader2, PackageX, TrendingUp, AlertTriangle } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend, Line, LineChart, CartesianGrid } from "recharts";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -182,7 +182,6 @@ export default function FinancialsPage() {
 
     const categoryProfitability = Object.entries(categoryData).map(([name, data]) => ({ name, ...data }));
 
-
     return { totalInventoryValue, potentialProfit, averageMargin, highestMarginProducts, inventoryTurnover, deadStock, pnlData: Array.from(pnlDataMap.values()), categoryProfitability };
   }, [products, sales, productMap]);
 
@@ -211,6 +210,121 @@ export default function FinancialsPage() {
     }
   }, [products, financials, aiAnalysis, isAnalysisLoading, currentUserProfile]);
 
+  // Calculate financial health score (moved outside of useMemo to avoid hook violations)
+  const calculateFinancialHealthScore = React.useCallback(() => {
+    if (!products || products.length === 0) return 0;
+    if (!financials || !financials.inventoryTurnover || !financials.averageMargin) return 0;
+
+    let score = 0;
+
+    // Inventory turnover score (0-30 points)
+    if (financials.inventoryTurnover > 1) score += 30;
+    else if (financials.inventoryTurnover > 0.5) score += 20;
+    else score += 10;
+
+    // Average margin score (0-25 points)
+    if (financials.averageMargin > 30) score += 25;
+    else if (financials.averageMargin > 20) score += 20;
+    else if (financials.averageMargin > 10) score += 15;
+    else score += 10;
+
+    // Dead stock ratio score (0-25 points)
+    const deadStockRatio = financials.deadStock.length / products.length;
+    if (deadStockRatio < 0.05) score += 25; // Less than 5% dead stock
+    else if (deadStockRatio < 0.1) score += 20;
+    else if (deadStockRatio < 0.2) score += 15;
+    else score += 10;
+
+    // Cash flow score (0-20 points)
+    const cashFlowScore = financials.potentialProfit > financials.totalInventoryValue * 0.2 ? 20 : 15;
+    score += cashFlowScore;
+
+    return Math.round(score);
+  }, [products, financials]);
+
+  // Margin Alert System Component
+  const MarginAlertCard = () => {
+    const lowMarginProducts = products?.filter(p => {
+      const margin = p.sellingPrice > 0 ? ((p.sellingPrice - p.costPrice) / p.sellingPrice) * 100 : 0;
+      return margin < 10 && margin > 0; // Less than 10% margin but not negative
+    }) || [];
+
+    const lossProducts = products?.filter(p => p.sellingPrice <= p.costPrice && p.sellingPrice > 0) || [];
+
+    return (
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center text-orange-800">
+            <AlertTriangle className="mr-2 h-5 w-5" />
+            Margin Alerts
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {lossProducts.length > 0 && (
+            <div className="mb-3 p-3 bg-red-100 rounded border border-red-200">
+              <p className="text-red-800 font-medium">🚨 Selling at Loss:</p>
+              <p className="text-red-700 text-sm">{lossProducts.length} products are selling below cost</p>
+            </div>
+          )}
+          {lowMarginProducts.length > 0 && (
+            <div className="p-3 bg-yellow-100 rounded border border-yellow-200">
+              <p className="text-yellow-800 font-medium">⚠️ Low Margin Products:</p>
+              <p className="text-yellow-700 text-sm">{lowMarginProducts.length} products have less than 10% margin</p>
+            </div>
+          )}
+          {lossProducts.length === 0 && lowMarginProducts.length === 0 && (
+            <p className="text-green-700">✅ All products have healthy margins</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Financial Health Score Component
+  const FinancialHealthCard = () => {
+    const getHealthColor = (score: number) => {
+      if (score >= 80) return 'text-green-600';
+      if (score >= 60) return 'text-yellow-600';
+      return 'text-red-600';
+    };
+
+    const getHealthMessage = (score: number) => {
+      if (score >= 80) return 'Excellent financial health!';
+      if (score >= 60) return 'Good financial health with room for improvement';
+      if (score >= 40) return 'Fair financial health - consider optimizing';
+      return 'Poor financial health - immediate action needed';
+    };
+
+    const healthScore = calculateFinancialHealthScore();
+
+    return (
+      <Card className="text-center">
+        <CardHeader>
+          <CardTitle>Financial Health Score</CardTitle>
+          <CardDescription>Overall business performance indicator</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className={`text-6xl font-bold mb-2 ${getHealthColor(healthScore)}`}>
+            {healthScore}
+          </div>
+          <div className="text-lg text-muted-foreground mb-4">
+            {getHealthMessage(healthScore)}
+          </div>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="text-center">
+              <div className="font-medium">Inventory Turnover</div>
+              <div className="text-muted-foreground">{financials.inventoryTurnover.toFixed(2)}x</div>
+            </div>
+            <div className="text-center">
+              <div className="font-medium">Avg Margin</div>
+              <div className="text-muted-foreground">{financials.averageMargin.toFixed(1)}%</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   if (pageIsLoading || !currentUserProfile || currentUserProfile.role !== 'Admin') {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -225,7 +339,7 @@ export default function FinancialsPage() {
         title="Financials"
         description="A comprehensive, interactive overview of your inventory's financial health."
       />
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Inventory Value</CardTitle>
@@ -256,7 +370,10 @@ export default function FinancialsPage() {
             <p className="text-xs text-muted-foreground">Average profit margin across all products.</p>
           </CardContent>
         </Card>
-         <Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Inventory Turnover</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -266,6 +383,8 @@ export default function FinancialsPage() {
             <p className="text-xs text-muted-foreground">Times inventory sold in last 30 days. Higher is better.</p>
           </CardContent>
         </Card>
+        <MarginAlertCard />
+        <FinancialHealthCard />
       </div>
 
        <Card>
@@ -302,8 +421,8 @@ export default function FinancialsPage() {
                         <YAxis dataKey="name" type="category" width={80} />
                         <Tooltip formatter={(value: number, name: string) => [`$${value.toFixed(2)}`, name.charAt(0).toUpperCase() + name.slice(1)]} />
                         <Legend />
-                        <Bar dataKey="revenue" fill="hsl(var(--secondary))" radius={[0, 4, 4, 0]}/>
-                        <Bar dataKey="profit" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}/>
+                        <Bar dataKey="revenue" fill="#82ca9d" radius={[0, 4, 4, 0]}/>
+                        <Bar dataKey="profit" fill="#8884d8" radius={[0, 4, 4, 0]}/>
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>
@@ -325,7 +444,7 @@ export default function FinancialsPage() {
                             <div className="rounded-lg border bg-background p-2 shadow-sm">
                                 <div className="grid grid-cols-1 gap-1.5">
                                     <p className="text-sm font-medium">{label}</p>
-                                    <p className="text-sm text-primary">{`Margin: ${payload[0].value?.toFixed(2)}%`}</p>
+                                    <p className="text-sm text-primary">{`Margin: ${typeof payload[0].value === 'number' ? payload[0].value.toFixed(2) : payload[0].value}%`}</p>
                                     <div className="text-xs text-muted-foreground grid grid-cols-2 gap-x-2">
                                         <span>Cost:</span><span className="font-mono text-right">${payload[0].payload.costPrice.toFixed(2)}</span>
                                         <span>Selling:</span><span className="font-mono text-right">${payload[0].payload.sellingPrice.toFixed(2)}</span>
@@ -376,9 +495,9 @@ export default function FinancialsPage() {
             <CardHeader>
                 <CardTitle className="flex items-center">
                     <BrainCircuit className="mr-2" />
-                    AI Financial Analyst
+                    Financial Analyst
                 </CardTitle>
-                <CardDescription>An AI-generated analysis of your financial data.</CardDescription>
+                <CardDescription></CardDescription>
             </CardHeader>
             <CardContent>
                 {isAnalysisLoading && (

@@ -8,7 +8,6 @@ import type { UserProfile } from '@/types';
 import { doc } from 'firebase/firestore';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Loader2 } from 'lucide-react';
-import { FloatingChatbot } from '@/components/floating-chatbot';
 
 export default function AppLayout({
   children,
@@ -57,7 +56,6 @@ export default function AppLayout({
       <main className="flex-1 bg-muted/40">
         {children}
       </main>
-      <FloatingChatbot />
     </div>
   );
 }
